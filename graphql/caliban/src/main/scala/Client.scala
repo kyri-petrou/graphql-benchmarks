@@ -18,12 +18,13 @@ object Client {
       val req = HttpRequest.newBuilder(uri).version(HttpClient.Version.HTTP_1_1).build()
       ZIO
         .fromCompletableFuture(client.sendAsync(req, BodyHandlers.ofByteArray()))
-        .map(r => readFromArray[A](r.body()))
+        .flatMap(r => ZIO.attempt(readFromArray[A](r.body())))
     }
   }
 
-  val live: TaskLayer[Client] = ZLayer.scoped {
-    ZIO.executor.map { executor =>
+  private val httpClient = ZLayer.scoped(
+    ZIO.fromAutoCloseable(
+      ZIO.executor.map { executor =>
         HttpClient
           .newBuilder()
           .followRedirects(HttpClient.Redirect.NEVER)
@@ -31,13 +32,16 @@ object Client {
           .executor(executor.asJava)
           .proxy(proxy())
           .build()
-      }.map(new Live(_))
-  }
+      }
+    )
+  )
+
+  val live: TaskLayer[Client] = httpClient >>> ZLayer.derive[Live]
 
   private def proxy() = new ProxySelector {
     override def select(uri: URI): java.util.List[Proxy] = {
       val proxyList = new java.util.ArrayList[Proxy](1)
-      val address   = InetSocketAddress.createUnresolved("127.0.0.1", 3000)
+      val address   = InetSocketAddress("127.0.0.1", 3000)
       val p         = new Proxy(Proxy.Type.HTTP, address)
 
       proxyList.add(p)
@@ -47,7 +51,7 @@ object Client {
     override def connectFailed(uri: URI, sa: SocketAddress, ioe: IOException): Unit = {
       throw new UnsupportedOperationException(
         s"Couldn't connect to the proxy server, uri: $uri, socket: $sa",
-        ioe
+        ioe,
       )
     }
   }
