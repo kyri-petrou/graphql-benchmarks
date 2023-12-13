@@ -33,8 +33,8 @@ object Post {
   case class Dto(id: Int, userId: Int, title: String, body: String)
 
   object Dto {
-    given Schema[Service, Post.Dto] = summonInline[Schema[Service, Post]].contramap { raw =>
-      Post(raw.id, raw.userId, raw.title, raw.body, ZQuery.suspend(Service.user(raw.userId)))
+    given Schema[Service, Post.Dto] = ServiceSchema[Post].contramap { post =>
+      Post(post.id, post.userId, post.title, post.body, ZQuery.suspend(Service.user(post.userId)))
     }
   }
 }
