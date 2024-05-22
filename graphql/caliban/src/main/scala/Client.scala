@@ -35,8 +35,8 @@ object Client {
             .setProxy(new HttpHost("http", "127.0.0.1", 3000))
             .setConnectionManager({
               val cm = new PoolingHttpClientConnectionManager()
-              cm.setMaxTotal(2000)
-              cm.setDefaultMaxPerRoute(200)
+              cm.setMaxTotal(100)
+              cm.setDefaultMaxPerRoute(10)
               cm
             })
             .build()
