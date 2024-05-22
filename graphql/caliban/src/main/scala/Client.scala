@@ -1,38 +1,44 @@
 import com.github.plokhotnyuk.jsoniter_scala.core.*
-import jdk.internal.net.http.ResponseSubscribers
+import org.apache.hc.client5.http.classic.methods.HttpGet
+import org.apache.hc.client5.http.impl.classic.{CloseableHttpClient, HttpClients}
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager
+import org.apache.hc.core5.http.io.HttpClientResponseHandler
+import org.apache.hc.core5.http.{ClassicHttpResponse, HttpHost}
 import zio.*
 
 import java.net.*
-import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-import java.util.function.Function
 
 trait Client {
   def get[A](url: URI)(using JsonValueCodec[A]): Task[A]
 }
 
 object Client {
-  private final class Live(client: HttpClient) extends Client {
+  private final class Live(client: CloseableHttpClient) extends Client {
 
-    private final class ResponseDecoder[A](using JsonValueCodec[A]) extends HttpResponse.BodyHandler[A] {
-      override def apply(responseInfo: HttpResponse.ResponseInfo): HttpResponse.BodySubscriber[A] = {
-        new ResponseSubscribers.ByteArraySubscriber[A](readFromArray[A](_))
-      }
+    private final class ResponseDecoder[A](using JsonValueCodec[A]) extends HttpClientResponseHandler[A] {
+      override def handleResponse(response: ClassicHttpResponse): A = readFromStream(response.getEntity.getContent)
     }
 
     def get[A](uri: URI)(using JsonValueCodec[A]): Task[A] = {
-      val req = HttpRequest.newBuilder(uri).GET().build()
-      val handler = new ResponseDecoder[A]
-      ZIO.attempt(client.send(req, handler).body())
+      val req     = HttpGet(uri)
+      val decoder = new ResponseDecoder[A]
+      ZIO.attempt(client.execute(req, decoder))
     }
   }
 
-  private val httpClient: TaskLayer[HttpClient] = ZLayer.scoped(
+  private val httpClient: TaskLayer[CloseableHttpClient] = ZLayer.scoped(
     ZIO.fromAutoCloseable(
       ZIO
-        .executor.map { e =>
-          HttpClient.newBuilder()
-            .proxy(ProxySelector.of(new InetSocketAddress("127.0.0.1", 3000)))
-            .executor(e.asJava)
+        .succeed {
+          HttpClients
+            .custom()
+            .setProxy(new HttpHost("http", "127.0.0.1", 3000))
+            .setConnectionManager({
+              val cm = new PoolingHttpClientConnectionManager()
+              cm.setMaxTotal(2000)
+              cm.setDefaultMaxPerRoute(200)
+              cm
+            })
             .build()
         }
     )
