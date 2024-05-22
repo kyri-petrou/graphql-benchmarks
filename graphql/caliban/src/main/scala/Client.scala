@@ -1,9 +1,11 @@
 import com.github.plokhotnyuk.jsoniter_scala.core.*
+import org.apache.hc.client5.http.ConnectionKeepAliveStrategy
 import org.apache.hc.client5.http.classic.methods.HttpGet
 import org.apache.hc.client5.http.impl.classic.{CloseableHttpClient, HttpClients}
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager
 import org.apache.hc.core5.http.io.HttpClientResponseHandler
 import org.apache.hc.core5.http.{ClassicHttpResponse, HttpHost}
+import org.apache.hc.core5.util.TimeValue
 import zio.*
 
 import java.net.*
@@ -33,10 +35,10 @@ object Client {
           HttpClients
             .custom()
             .setProxy(new HttpHost("http", "127.0.0.1", 3000))
+            .setKeepAliveStrategy((_, _) => TimeValue.ofMinutes(10))
             .setConnectionManager({
               val cm = new PoolingHttpClientConnectionManager()
               cm.setMaxTotal(100)
-              cm.setDefaultMaxPerRoute(10)
               cm
             })
             .build()
