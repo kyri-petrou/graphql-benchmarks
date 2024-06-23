@@ -14,11 +14,11 @@ trait Service {
 object Service {
   val layer: RLayer[Client, Service] = ZLayer.derive[Live]
 
-  private class Live(client: Client) extends Service { self =>
+  private class Live(client: Client) extends Service {
+    self =>
 
-    private val BaseUri  = URI.create("http://jsonplaceholder.typicode.com")
-    private val PostsUri = BaseUri.resolve("/posts")
-    private val UsersUri = BaseUri.resolve("/users")
+    private inline val BaseUri = "http://jsonplaceholder.typicode.com"
+    private val PostsUri = URI.create(BaseUri + "/posts")
 
     val posts: Task[List[Post]] =
       client.get[List[Post]](PostsUri)
@@ -27,12 +27,13 @@ object Service {
       UsersDataSource.get(id)
 
     private object UsersDataSource {
-      def get(id: Int): TaskQuery[User] = ZQuery.fromRequestUncached(Req(id))(usersDS)
+      def get(id: Int): TaskQuery[User] = ZQuery.fromRequest(Req(id))(usersDS)
 
       private case class Req(id: Int) extends Request[Throwable, User]
 
       private val usersDS = DataSource.fromFunctionZIO("UsersDataSource") { (req: Req) =>
-        client.get[User](UsersUri.resolve(req.id.toString))
+        val uri = URI.create(BaseUri + "/users/" + req.id)
+        client.get[User](uri)
       }
 
       private given JsonValueCodec[User] = JsonCodecMaker.make(CodecMakerConfig.withDecodingOnly(true))
