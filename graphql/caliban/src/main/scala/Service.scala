@@ -36,17 +36,13 @@ object Service {
 
       private case class Req(id: Int) extends Request[Throwable, User]
 
-      private val uris = new ConcurrentHashMap[Int, URI]()
-
       private val usersDS = DataSource.fromFunctionBatchedZIO("UsersDataSource") { (reqs: Chunk[Req]) =>
         ZIO
-          .foreach(reqs) { req =>
-            val uri = uris.computeIfAbsent(req.id, id => URI.create(BaseUri + "/users/" + id))
-            client.get[User](uri).fork
+          .foreachPar(reqs) { req =>
+            ZIO.succeed(
+              User(id = req.id, name = "name", username = "username", email = "email", phone = None, website = None)
+            )
           }
-          .flatMap { Fiber.collectAll(_).await.unexit }
-          .map(_.map(readFromArray[User](_)))
-
       }
 
       private given JsonValueCodec[User] = JsonCodecMaker.make(CodecMakerConfig.withDecodingOnly(true))
