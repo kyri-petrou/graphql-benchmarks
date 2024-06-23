@@ -41,7 +41,7 @@ object Service {
       private val usersDS = DataSource.fromFunctionBatchedZIO("UsersDataSource") { (reqs: Chunk[Req]) =>
         ZIO
           .foreach(reqs) { req =>
-            val uri = uris.computeIfAbsent(req.id, URI.create(BaseUri + "/users/" + req.id))
+            val uri = uris.computeIfAbsent(req.id, id => URI.create(BaseUri + "/users/" + id))
             client.get[User](uri).fork
           }
           .flatMap { Fiber.collectAll(_).await.unexit }
