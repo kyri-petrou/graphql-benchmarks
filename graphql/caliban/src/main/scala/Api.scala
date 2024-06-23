@@ -3,13 +3,15 @@ import caliban.schema.Schema.*
 import caliban.schema.Annotations.{GQLExcluded, GQLField}
 import caliban.schema.{Schema, SchemaDerivation}
 import zio.*
-import zio.query.RQuery
-
-object ServiceSchema extends SchemaDerivation[Service]
+import zio.query.{RQuery, TaskQuery}
 
 case class Query(
     posts: Task[List[Post]]
-) derives ServiceSchema.SemiAuto
+)
+
+object Query {
+  given (using Service): Schema[Any, Query] = Schema.SemiAuto.derived
+}
 
 case class User(
     id: Int,
@@ -18,14 +20,22 @@ case class User(
     email: String,
     phone: Option[String],
     website: Option[String]
-) derives ServiceSchema.SemiAuto
+) derives Schema.SemiAuto
 
 case class Post(
     userId: Int,
     id: Int,
     title: String,
-    body: String,
-    @GQLExcluded service: Service
-) derives ServiceSchema.SemiAuto {
-  @GQLField def user: RQuery[Service, User] = service.user(userId)
+    body: String
+)
+
+object Post {
+  given (using svc: Service): Schema[Any, Post] =
+    Schema.customObj("Post")(
+      field("userId")(_.userId),
+      field("id")(_.id),
+      field("title")(_.title),
+      field("body")(_.body),
+      field("user")(p => svc.user(p.userId))
+    )
 }

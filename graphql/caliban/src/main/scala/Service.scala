@@ -7,6 +7,7 @@ import java.net.URI
 
 trait Service {
   val posts: Task[List[Post]]
+
   def user(id: Int): TaskQuery[User]
 }
 
@@ -14,12 +15,13 @@ object Service {
   val layer: RLayer[Client, Service] = ZLayer.derive[Live]
 
   private class Live(client: Client) extends Service { self =>
+
     private val BaseUri  = URI.create("http://jsonplaceholder.typicode.com")
     private val PostsUri = BaseUri.resolve("/posts")
     private val UsersUri = BaseUri.resolve("/users")
 
     val posts: Task[List[Post]] = {
-      client.get[List[Post]](PostsUri)
+      client.get[List[Post]](PostsUri).debug
     }
 
     def user(id: Int): TaskQuery[User] =
@@ -38,11 +40,5 @@ object Service {
     }
 
     private given JsonValueCodec[List[Post]] = JsonCodecMaker.make(CodecMakerConfig.withDecodingOnly(true))
-
-    private given JsonValueCodec[Service] with {
-      def decodeValue(in: JsonReader, default: Service): Service = default
-      def encodeValue(x: Service, out: JsonWriter): Unit         = ()
-      inline def nullValue: Service                              = self
-    }
   }
 }
