@@ -42,7 +42,7 @@ object Client {
             .setConnectionManager({
               PoolingAsyncClientConnectionManagerBuilder
                 .create()
-                .setMaxConnTotal(500)
+                .setMaxConnTotal(1000)
                 .setMaxConnPerRoute(100)
                 .build()
             })
