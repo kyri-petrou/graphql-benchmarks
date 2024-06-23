@@ -5,7 +5,7 @@ import zio.*
 import zio.RuntimeFlag.EagerShiftBack
 import kyo.KyoSchedulerZIOAppDefault
 
-object Main extends KyoSchedulerZIOAppDefault {
+object Main extends ZIOAppDefault {
 
   override val bootstrap: ZLayer[Any, Any, Any] =
     ZLayer.make[Any](
@@ -18,6 +18,10 @@ object Main extends KyoSchedulerZIOAppDefault {
   def run =
     api
       .flatMap(_.runServer(8000, apiPath = "/graphql"))
-      .provide(Service.layer, Client.live, ZLayer.scoped(Configurator.setQueryExecution(QueryExecution.Batched)))
+      .provide(
+        Service.layer,
+        Client.live,
+        ZLayer.scoped(Configurator.setQueryExecution(QueryExecution.Batched))
+      )
 
 }
