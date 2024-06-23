@@ -7,13 +7,14 @@ lazy val root = (project in file("."))
   .settings(
     name       := "scala-caliban",
     run / fork := true,
-    run / javaOptions ++= Seq("-Xms4G", "-Xmx4G"),
+    run / javaOptions ++= Seq("-Xms8G", "-Xmx8G"),
     libraryDependencies ++= Seq(
       "com.github.ghostdogpr"                 %% "caliban-quick"         % "2.7.2",
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core"   % "2.30.1",
       "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % "2.30.1" % Provided,
       "org.apache.httpcomponents.client5"      % "httpclient5"           % "5.3.1",
-      "dev.zio"                               %% "zio"                   % "2.1.4"
+      "dev.zio"                               %% "zio"                   % "2.1.4",
+      "io.getkyo"                             %% "kyo-scheduler-zio"     % "0.10.2"
     )
   )
 
