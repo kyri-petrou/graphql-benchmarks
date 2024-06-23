@@ -9,21 +9,21 @@ import zio.*
 import java.net.*
 
 trait Client {
-  def get[A](url: URI)(using JsonValueCodec[A]): Task[A]
+  def get[A](url: URI)(using JsonValueCodec[A]): Task[Array[Byte]]
 }
 
 object Client {
   private final class Live(client: CloseableHttpAsyncClient) extends Client {
 
-    private def mkCallback[A](cb: ZIO[Any, Throwable, A] => Unit)(using JsonValueCodec[A], Trace) =
+    private def mkCallback[A](cb: ZIO[Any, Throwable, Array[Byte]] => Unit)(using JsonValueCodec[A], Trace) =
       new FutureCallback[SimpleHttpResponse] {
-        def completed(result: SimpleHttpResponse): Unit = cb(ZIO.attempt(readFromArray[A](result.getBodyBytes)))
+        def completed(result: SimpleHttpResponse): Unit = cb(Exit.succeed(result.getBodyBytes))
         def failed(ex: Exception): Unit                 = cb(ZIO.fail(ex))
         def cancelled(): Unit                           = cb(ZIO.fail(new InterruptedException("cancelled")))
       }
 
-    def get[A](uri: URI)(using JsonValueCodec[A]): Task[A] =
-      ZIO.async[Any, Throwable, A] { cb =>
+    def get[A](uri: URI)(using JsonValueCodec[A]): Task[Array[Byte]] =
+      ZIO.async[Any, Throwable, Array[Byte]] { cb =>
         client.execute(
           SimpleRequestProducer.create(SimpleRequestBuilder.get().setUri(uri).build),
           SimpleResponseConsumer.create(),
@@ -42,8 +42,8 @@ object Client {
             .setConnectionManager({
               PoolingAsyncClientConnectionManagerBuilder
                 .create()
-                .setMaxConnTotal(2000)
-                .setMaxConnPerRoute(200)
+                .setMaxConnTotal(500)
+                .setMaxConnPerRoute(100)
                 .build()
             })
             .build()
