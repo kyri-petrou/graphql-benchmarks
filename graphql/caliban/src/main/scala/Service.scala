@@ -32,7 +32,7 @@ object Service {
       private case class Req(id: Int) extends Request[Throwable, User]
 
       private val usersDS = DataSource.fromFunctionBatchedZIO("UsersDataSource") { (reqs: Chunk[Req]) =>
-        ZIO.foreachPar(reqs) { req =>
+        ZIO.foreach(reqs) { req =>
           val uri = URI.create(BaseUri + "/users/" + req.id)
           client.get[User](uri)
         }
