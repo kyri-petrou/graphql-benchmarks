@@ -4,6 +4,7 @@ import zio.query.*
 import zio.{Chunk, Fiber, RLayer, Task, ZIO, ZLayer}
 
 import java.net.URI
+import java.util.concurrent.ConcurrentHashMap
 
 trait Service {
   val posts: Task[List[Post]]
@@ -35,10 +36,12 @@ object Service {
 
       private case class Req(id: Int) extends Request[Throwable, User]
 
+      private val uris = new ConcurrentHashMap[Int, URI]()
+
       private val usersDS = DataSource.fromFunctionBatchedZIO("UsersDataSource") { (reqs: Chunk[Req]) =>
         ZIO
           .foreach(reqs) { req =>
-            val uri = URI.create(BaseUri + "/users/" + req.id)
+            val uri = uris.computeIfAbsent(req.id, URI.create(BaseUri + "/users/" + req.id))
             client.get[User](uri).fork
           }
           .flatMap { Fiber.collectAll(_).await.unexit }
