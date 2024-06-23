@@ -3,7 +3,6 @@ import caliban.execution.QueryExecution
 import caliban.quick.*
 import zio.*
 import zio.RuntimeFlag.EagerShiftBack
-import kyo.KyoSchedulerZIOAppDefault
 
 object Main extends ZIOAppDefault {
 
