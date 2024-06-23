@@ -20,9 +20,8 @@ object Service {
     private val PostsUri = BaseUri.resolve("/posts")
     private val UsersUri = BaseUri.resolve("/users")
 
-    val posts: Task[List[Post]] = {
-      client.get[List[Post]](PostsUri).debug
-    }
+    val posts: Task[List[Post]] =
+      client.get[List[Post]](PostsUri)
 
     def user(id: Int): TaskQuery[User] =
       UsersDataSource.get(id)
