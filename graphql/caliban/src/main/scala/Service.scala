@@ -38,7 +38,7 @@ object Service {
       }
 
       private val usersDS = DataSource.fromFunctionBatchedZIO("UsersDataSource") { (reqs: Chunk[Req]) =>
-        ZIO.foreach(reqs) { req =>
+        ZIO.foreachPar(reqs) { req =>
           client.get[List[User]](UsersUri, Chunk.single(req.toQueryParam)).map(_.head)
         }
       }
