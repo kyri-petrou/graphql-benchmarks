@@ -1,7 +1,7 @@
 import com.github.plokhotnyuk.jsoniter_scala.core.*
 import com.github.plokhotnyuk.jsoniter_scala.macros.*
 import zio.query.*
-import zio.{RIO, RLayer, Task, ZIO, ZLayer}
+import zio.{Chunk, RIO, RLayer, Task, ZIO, ZLayer}
 
 import java.net.URI
 
@@ -18,11 +18,11 @@ object Service {
 
   private class Live(client: Client) extends Service {
     private inline val BaseUrl = "http://jsonplaceholder.typicode.com"
+    private val PostsUri       = URI.create(BaseUrl + "/posts")
+    private val UsersUri       = URI.create(BaseUrl + "/users")
 
-    val posts: Task[List[Post]] = {
-      val uri = URI.create(BaseUrl + "/posts")
-      client.get[List[Post]](uri)
-    }
+    val posts: Task[List[Post]] =
+      client.get[List[Post]](PostsUri)
 
     def user(id: Int): TaskQuery[User] =
       UsersDataSource.get(id)
@@ -30,13 +30,17 @@ object Service {
     private object UsersDataSource {
       def get(id: Int): TaskQuery[User] = ZQuery.fromRequest(Req(id))(usersDS)
 
-      private case class Req(id: Int) extends Request[Throwable, User]
-
-      private val usersDS = DataSource.fromFunctionZIO("UsersDataSource") { (req: Req) =>
-        client.get[User](URI.create(BaseUrl + "/users/" + req.id))
+      private case class Req(id: Int) extends Request[Throwable, User] {
+        def toQueryParam: (String, String) = ("id", id.toString)
       }
 
-      private given JsonValueCodec[User] = JsonCodecMaker.make(CodecMakerConfig.withDecodingOnly(true))
+      private val usersDS = DataSource.fromFunctionBatchedZIO("UsersDataSource") { (reqs: Chunk[Req]) =>
+        client
+          .get[Array[User]](UsersUri, reqs.map(_.toQueryParam))
+          .map(Chunk.fromArray)
+      }
+
+      private given JsonValueCodec[Array[User]] = JsonCodecMaker.make(CodecMakerConfig.withDecodingOnly(true))
     }
 
     private given JsonValueCodec[List[Post]] = JsonCodecMaker.make(CodecMakerConfig.withDecodingOnly(true))
