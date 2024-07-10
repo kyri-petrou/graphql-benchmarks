@@ -7,7 +7,8 @@ object Main extends ZIOAppDefault {
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
     Runtime.removeDefaultLoggers ++ Runtime.disableFlags(RuntimeFlag.FiberRoots)
 
-  private val api = graphQL(RootResolver(Query(Service.posts)))
+  private val api = graphQL(RootResolver(Query(Service.posts))) @@ Dedup.wrapper()
+
   def run =
     api
       .runServer(8000, apiPath = "/graphql")
