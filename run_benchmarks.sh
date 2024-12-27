@@ -23,7 +23,7 @@ function runBenchmark() {
     killServerOnPort 8000
     sleep 5
     local serviceScript="$1"
-    local benchmarks=(1 2 3)
+    local benchmarks=(3)
 
   if [[ "$serviceScript" == *"hasura"* ]]; then
     bash "$serviceScript" # Run synchronously without background process
@@ -53,8 +53,8 @@ function runBenchmark() {
     sleep 1 # Give some time for apps to finish in-flight requests from warmup
     bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
     sleep 1
-    bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
-    sleep 1
+    # bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
+    # sleep 1
 
         # 3 benchmark runs
         for resultFile in "${resultFiles[@]}"; do

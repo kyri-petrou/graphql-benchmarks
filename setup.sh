@@ -21,7 +21,7 @@
 
 # For caliban
 cd graphql/caliban
-./sbt compile
+./sbt "clean; assembly"
 cd ../../
 
 ## For async-graphql
