@@ -44,17 +44,17 @@ function runBenchmark() {
     # Replace / with _
     local sanitizedServiceScriptName=$(echo "$serviceScript" | tr '/' '_')
 
-    local resultFiles=("result1_${sanitizedServiceScriptName}.txt" "result2_${sanitizedServiceScriptName}.txt" "result3_${sanitizedServiceScriptName}.txt")
+    local resultFiles=("result1_${sanitizedServiceScriptName}.txt")
 
     bash "test_query${bench}.sh" "$graphqlEndpoint"
 
     # Warmup run
     bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
     sleep 1 # Give some time for apps to finish in-flight requests from warmup
-    bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
-    sleep 1
-    # bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
-    # sleep 1
+#    bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
+#    sleep 1
+#    bash "$benchmarkScript" "$graphqlEndpoint" "$bench" >/dev/null
+#    sleep 1
 
         # 3 benchmark runs
         for resultFile in "${resultFiles[@]}"; do
