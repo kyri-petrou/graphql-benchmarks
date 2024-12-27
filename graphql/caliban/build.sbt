@@ -3,6 +3,14 @@ ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "com.example"
 ThisBuild / organizationName := "example"
 
+assembly / mainClass := Some("Main")
+
+assembly / assemblyMergeStrategy := {
+  case PathList("META-INF", "MANIFEST.MF")                  => MergeStrategy.discard
+  case PathList("META-INF", "io.netty.versions.properties") => MergeStrategy.first
+  case x                                                    => MergeStrategy.first
+}
+
 lazy val root = (project in file("."))
   .settings(
     name       := "scala-caliban",
